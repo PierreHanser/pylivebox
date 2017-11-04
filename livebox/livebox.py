@@ -3,9 +3,14 @@
 
 import urllib
 import urllib2
+import ssl
 import json
+import sys
+from pprint import pprint as pp
 
 import getpass
+
+from contactsReader import readMainFile
 
 # Livebox.login()              Authentification session utilisateur
 # Livebox.logout()             Fermeture session
@@ -26,7 +31,7 @@ class Livebox:
 
 	def __init__(self,url_prefix='https://livebox'):
 		self._url_prefix = url_prefix
-
+                ssl._create_default_https_context = ssl._create_unverified_context
 
 
 	def login(self):
@@ -52,6 +57,10 @@ class Livebox:
 	def _sysbus(self,question):
 		return self._request("%s/sysbus/%s" % (self._url_prefix,question)
 			, '{"parameters":{}}' )
+
+	def _sysbusSend(self,question, params):
+		return self._request("%s/sysbus/%s" % (self._url_prefix,question)
+			, '{"parameters":%s}' % params )
 
 	def _ws(self, params):
 		return self._request("%s/ws" % (self._url_prefix)
@@ -99,6 +108,13 @@ class Livebox:
 		'''Information lien dsl'''
 		pass
 
+        def phonebook(self):
+		return self._sysbus('Phonebook:getAllContacts')
+
+        def addContact(self, contact):
+		return self._sysbusSend('Phonebook:addContactAndGenUUID',
+                        """{"contact":""" + json.dumps(contact) + """}""")
+
 	def wifi_com_status(self):
 		'''Information Wifi public Orange)'''
 		return self._sysbus('Wificom:getStatus')
@@ -142,6 +158,26 @@ if __name__ == '__main__':
 	lb.login()
 	#lb.sysbus('DeviceInfo?_restDepth=-1', c, C)
 	#print lb._sysbus('')
+        """
+        contact = {
+                "name": "N:essai;gaïane;",
+                "formattedName": "test gaïane",
+                "ringtone": "1",
+                "telephoneNumbers": [ { "name": "33777",
+                                        "type": "CELL",
+                                        "preferred": False
+                                      }
+                                    ]
+                }
+        print json.dumps(contact)
+        print lb.addContact(contact)
+        """
+        allContacts = readMainFile()
+        for contact in allContacts:
+            print lb.addContact(contact)
+	pp(lb.phonebook())
+	print lb.logout()
+        sys.exit(0)
 	print lb.wan_status()
 	print lb.list_trunks()
 	print lb.ip_tv_status()
@@ -157,9 +193,5 @@ if __name__ == '__main__':
 
 	print lb._sysbus('')
 	print lb.logout()
-
-
-
-
 
 
